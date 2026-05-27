@@ -8,7 +8,6 @@
   "icon": "icon.svg",
   "actions_explicit": true,
   "system": true,
-  "hidden_in_sidebar": true,
   "capabilities": [
     "marketplace:read",
     "marketplace:write",
@@ -20,13 +19,13 @@
   "tools": [
     {
       "name": "skeleton_refresh_marketplace_status",
-      "description": "Marketplace catalog snapshot: featured apps + category list. Read by LLM each turn so it knows what's available without calling search_marketplace.",
+      "description": "Marketplace catalog snapshot + user's currently installed apps. Read by LLM each turn so it knows what's available AND what the user already has without calling search_marketplace or list_my_installed first.",
       "scopes": [],
       "parameters": {}
     },
     {
       "name": "search_marketplace",
-      "description": "Search apps in the Imperal Marketplace by free-text query. Use when user asks 'do you have X', 'is there an app for Y', 'find me an extension for Z'. Returns up to 20 results.",
+      "description": "Search apps in the Imperal Marketplace by free-text query. Use when user asks 'do you have X', 'is there an app for Y', 'find me an extension for Z'.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -76,7 +75,7 @@
     },
     {
       "name": "get_app_details",
-      "description": "Get full details for a specific Marketplace app — description, version, install count, average rating, category, install status for current user, tags. Use after search_marketplace when user asks 'tell me more about X' or 'what does X do'.",
+      "description": "Get full details for a specific Marketplace app — description, version, install count, average rating, install status for current user, tags. Use after search_marketplace.",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
@@ -85,7 +84,7 @@
         "description": "Target a specific Marketplace app by id.",
         "properties": {
           "app_id": {
-            "description": "Marketplace app id (e.g. 'spotify', 'mail', 'notes'). Pull from prior search_apps result or skeleton featured list. NEVER fabricate.",
+            "description": "Marketplace app id (e.g. 'spotify', 'mail', 'notes'). Pull from prior search_marketplace result or skeleton featured list. NEVER fabricate.",
             "title": "App Id",
             "type": "string"
           }
@@ -105,12 +104,103 @@
     },
     {
       "name": "list_my_installed",
-      "description": "List apps currently installed for the user (excludes system apps like admin/billing which are always on). Use when user asks 'what apps do I have', 'show my installed extensions'.",
+      "description": "List apps currently installed for the user (excludes system apps like admin/billing which are always on).",
       "action_type": "read",
       "chain_callable": true,
       "effects": [],
       "id_projection": "",
       "params_schema": {},
+      "return_schema": {},
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "recommend_for_intent",
+      "description": "Recommend top Marketplace apps matching a user's stated need. Fetches up to 30 candidate apps from the catalog by keyword match, then uses an LLM to pick the top 3 with reasoning. Use when user describes a use case ('I need something for X', 'help me find an app to do Y'). Returns ranked picks with explanations.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Recommend apps for a user need (LLM-reranked).",
+        "properties": {
+          "user_need": {
+            "description": "Plain-language description of what the user wants to do (e.g. 'manage my email better', 'monitor my domains'). The tool fetches candidate apps from Marketplace and asks an LLM to pick the top-3 best fits with reasoning.",
+            "title": "User Need",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_need"
+        ],
+        "title": "RecommendParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "install_app",
+      "description": "Install a Marketplace app for the current user. Use when user says 'install X', 'add X', 'I want X' OR when they accept a prior offer with anaphoric reference like 'yes', 'go ahead', 'install it', 'do it'. REQUIRED arg: app_id (string). When the user message uses an anaphoric pronoun ('it', 'that one'), resolve app_id from the MOST RECENT app mentioned in conversation — typically the subject of the prior search_marketplace / get_app_details / recommend_for_intent result, OR from the previous assistant offer ('Should I install spotify?' → app_id='spotify'). Confirmation gate fires automatically; user must confirm.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:install"
+      ],
+      "id_projection": "app_id",
+      "params_schema": {
+        "description": "Target a specific Marketplace app by id.",
+        "properties": {
+          "app_id": {
+            "description": "Marketplace app id (e.g. 'spotify', 'mail', 'notes'). Pull from prior search_marketplace result or skeleton featured list. NEVER fabricate.",
+            "title": "App Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "title": "AppIdParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "uninstall_app",
+      "description": "Uninstall a Marketplace app from the current user's account. Use when user says 'uninstall X', 'remove X', 'I don't need X' OR when they confirm a prior offer with anaphoric reference like 'yes', 'uninstall it', 'remove it', 'go ahead', 'do it'. REQUIRED arg: app_id (string). For anaphoric references ('it', 'that one'), resolve app_id from the MOST RECENT app mentioned in conversation — typically the just-installed app, the subject of the prior search_marketplace, OR the app named in the assistant's previous offer ('Should I uninstall spotify?' → app_id='spotify'). NEVER request clarification when the prior turn unambiguously named the app; just dispatch with that app_id. Confirmation gate fires automatically; user must confirm before destructive action runs.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "delete:install"
+      ],
+      "id_projection": "app_id",
+      "params_schema": {
+        "description": "Target a specific Marketplace app by id.",
+        "properties": {
+          "app_id": {
+            "description": "Marketplace app id (e.g. 'spotify', 'mail', 'notes'). Pull from prior search_marketplace result or skeleton featured list. NEVER fabricate.",
+            "title": "App Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "title": "AppIdParams",
+        "type": "object"
+      },
       "return_schema": {},
       "event": "",
       "background": false,
@@ -127,5 +217,6 @@
     "health_check": {
       "interval_sec": 60
     }
-  }
+  },
+  "hidden_in_sidebar": true
 }
