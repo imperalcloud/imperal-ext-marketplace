@@ -1,0 +1,131 @@
+{
+  "manifest_schema_version": 3,
+  "sdk_version": "5.0.1",
+  "app_id": "marketplace",
+  "version": "1.0.0",
+  "name": "Marketplace",
+  "description": "Browse, discover and install apps in Imperal Marketplace from chat. Webbee can recommend apps matching what you need, show details and reviews, install or remove apps with confirmation.",
+  "icon": "icon.svg",
+  "actions_explicit": true,
+  "system": true,
+  "hidden_in_sidebar": true,
+  "capabilities": [
+    "marketplace:read",
+    "marketplace:write",
+    "store:read",
+    "store:write",
+    "ai:complete",
+    "marketplace:*"
+  ],
+  "tools": [
+    {
+      "name": "skeleton_refresh_marketplace_status",
+      "description": "Marketplace catalog snapshot: featured apps + category list. Read by LLM each turn so it knows what's available without calling search_marketplace.",
+      "scopes": [],
+      "parameters": {}
+    },
+    {
+      "name": "search_marketplace",
+      "description": "Search apps in the Imperal Marketplace by free-text query. Use when user asks 'do you have X', 'is there an app for Y', 'find me an extension for Z'. Returns up to 20 results.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Search Marketplace by free-text keyword + optional category.",
+        "properties": {
+          "query": {
+            "description": "Free-text search query — matches app name and description substring. Pass the user's wording verbatim when possible.",
+            "title": "Query",
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Optional Marketplace category filter (productivity, communication, media, analytics, etc). Omit for all categories.",
+            "title": "Category"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Max results (default 20, capped server-side at 50).",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchAppsParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "get_app_details",
+      "description": "Get full details for a specific Marketplace app — description, version, install count, average rating, category, install status for current user, tags. Use after search_marketplace when user asks 'tell me more about X' or 'what does X do'.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Target a specific Marketplace app by id.",
+        "properties": {
+          "app_id": {
+            "description": "Marketplace app id (e.g. 'spotify', 'mail', 'notes'). Pull from prior search_apps result or skeleton featured list. NEVER fabricate.",
+            "title": "App Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "title": "AppIdParams",
+        "type": "object"
+      },
+      "return_schema": {},
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "list_my_installed",
+      "description": "List apps currently installed for the user (excludes system apps like admin/billing which are always on). Use when user asks 'what apps do I have', 'show my installed extensions'.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {},
+      "return_schema": {},
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    }
+  ],
+  "signals": [],
+  "schedules": [],
+  "required_scopes": [],
+  "icon_size_bytes": 282,
+  "lifecycle": {
+    "health_check": {
+      "interval_sec": 60
+    }
+  }
+}
