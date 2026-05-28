@@ -64,6 +64,34 @@ async def fn_search_marketplace(ctx, params: SearchAppsParams) -> ActionResult:
         return ActionResult.error("Failed to search the Marketplace.")
 
     projected = [_project_app(a) for a in apps]
+
+    # No keyword match — common for non-English queries against the (often
+    # sparse, English) catalog metadata, e.g. "телеграм бот". Return the FULL
+    # catalog instead of an empty result so the user always sees options and
+    # Webbee's narrator can point to the right app semantically. Cheap (one
+    # extra HTTP fetch, no LLM). Full multilingual semantic search is a
+    # separate, deferred design (specs/2026-05-29-marketplace-multilingual-search).
+    if not projected and (params.query or params.category):
+        try:
+            all_apps = await search_marketplace_apps(ctx, query="", limit=50)
+        except Exception as exc:
+            log.warning("search_marketplace catalog fallback: %s", exc, exc_info=True)
+            all_apps = []
+        all_projected = [_project_app(a) for a in all_apps]
+        if all_projected:
+            return ActionResult.success(
+                data={
+                    "query": params.query,
+                    "category": params.category or "",
+                    "total": len(all_projected),
+                    "apps": all_projected,
+                },
+                summary=(
+                    f"No exact match for '{params.query}' — showing all "
+                    f"{len(all_projected)} available apps so you can choose."
+                ),
+            )
+
     summary = (
         f"Found {len(projected)} app(s) matching '{params.query}'."
         if projected
