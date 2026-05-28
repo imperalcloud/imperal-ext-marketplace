@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 from typing import Any
 
 log = logging.getLogger("marketplace.api")
@@ -140,6 +141,65 @@ async def get_featured_apps(ctx, limit: int = 10) -> list[dict]:
     if isinstance(data, dict):
         return data.get("featured") or data.get("apps") or []
     return []
+
+
+def _norm_app_token(s) -> str:
+    """Normalize an app reference for matching: lowercase, alphanumerics only.
+    'Microsoft Ads' / 'microsoft-ads' / 'MICROSOFT' -> 'microsoftads' / 'microsoft'."""
+    return re.sub(r"[^a-z0-9]+", "", str(s or "").lower())
+
+
+async def resolve_app_id(ctx, term: str) -> tuple[str | None, list[str]]:
+    """Resolve a user-supplied app reference to a canonical Marketplace app_id.
+
+    The classifier/step-extractor frequently passes the user's literal word
+    ('microsoft') or the display name ('TG Bot Builder') rather than the
+    canonical id ('microsoft-ads' / 'tg-bot'); the install/uninstall endpoints
+    then reject it with HTTP 400 "App not found or not active". Resolve against
+    the catalog before dispatching.
+
+    Returns ``(app_id, candidates)``:
+      * ``(canonical_id, [])``  — unique resolution (or input already canonical)
+      * ``(None, [names...])``  — ambiguous (>=2 distinct matches) → caller clarifies
+      * ``(None, [])``          — no match → caller reports not found
+    """
+    term_n = _norm_app_token(term)
+    if not term_n:
+        return None, []
+
+    apps = await search_marketplace_apps(ctx, query=term, limit=50)
+    if not apps:
+        apps = await search_marketplace_apps(ctx, query="", limit=50)
+
+    def _aid(a: dict) -> str:
+        return a.get("app_id") or a.get("id") or ""
+
+    def _name(a: dict) -> str:
+        return a.get("display_name") or a.get("name") or ""
+
+    # 1. exact canonical app_id (also covers the already-correct case)
+    for a in apps:
+        if _norm_app_token(_aid(a)) == term_n:
+            return _aid(a), []
+    # 2. exact display name
+    for a in apps:
+        if _norm_app_token(_name(a)) == term_n:
+            return _aid(a), []
+    # 3. substring / prefix match — accept only when it resolves uniquely
+    matches = []
+    for a in apps:
+        aid_n = _norm_app_token(_aid(a))
+        name_n = _norm_app_token(_name(a))
+        if (term_n in aid_n or term_n in name_n
+                or aid_n.startswith(term_n) or name_n.startswith(term_n)):
+            matches.append(a)
+    uniq = {_aid(m) for m in matches if _aid(m)}
+    if len(uniq) == 1:
+        return next(iter(uniq)), []
+    if uniq:
+        # ambiguous — surface display names so the caller can disambiguate
+        return None, [(_name(m) or _aid(m)) for m in matches][:8]
+    return None, []
 
 
 async def post_install_app(ctx, app_id: str) -> dict:

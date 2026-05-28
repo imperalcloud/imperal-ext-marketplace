@@ -11,7 +11,12 @@ import logging
 
 from imperal_sdk.chat import ActionResult
 
-from api import _invalidate_kernel_caches, post_install_app, post_uninstall_app
+from api import (
+    _invalidate_kernel_caches,
+    post_install_app,
+    post_uninstall_app,
+    resolve_app_id,
+)
 from app import chat
 from models import AppIdParams, InstallResult, UninstallResult
 
@@ -48,22 +53,37 @@ async def fn_install_app(ctx, params: AppIdParams) -> ActionResult:
     successful install so subscribers (skeletons, automation rules,
     audit ledger) can react.
     """
-    try:
-        result = await post_install_app(ctx, params.app_id)
-    except Exception as exc:
-        log.warning("install_app %s: %s", params.app_id, exc, exc_info=True)
+    # Resolve a friendly/partial reference ('microsoft', 'TG Bot Builder')
+    # to the canonical catalog app_id ('microsoft-ads', 'tg-bot') before
+    # dispatch — the install endpoint 400s on anything else.
+    app_id, candidates = await resolve_app_id(ctx, params.app_id)
+    if app_id is None:
+        if candidates:
+            return ActionResult.error(
+                f"'{params.app_id}' matches several apps: "
+                f"{', '.join(candidates)}. Which one should I install?"
+            )
         return ActionResult.error(
-            f"Failed to install '{params.app_id}': {str(exc)[:200]}"
+            f"No Marketplace app matches '{params.app_id}'. "
+            "Try searching the Marketplace first."
+        )
+
+    try:
+        result = await post_install_app(ctx, app_id)
+    except Exception as exc:
+        log.warning("install_app %s: %s", app_id, exc, exc_info=True)
+        return ActionResult.error(
+            f"Failed to install '{app_id}': {str(exc)[:200]}"
         )
 
     # Force Hub/sidebar/classifier to see the new install immediately —
     # kernel-side accessible_* caches + skeleton workflow reload.
-    await _invalidate_kernel_caches(ctx, params.app_id)
+    await _invalidate_kernel_caches(ctx, app_id)
 
     return ActionResult.success(
         data=result,
         summary=(
-            f"Installed '{params.app_id}' for you. "
+            f"Installed '{app_id}' for you. "
             f"Total installs: {result.get('install_count', '?')}."
         ),
     )
@@ -100,20 +120,32 @@ async def fn_uninstall_app(ctx, params: AppIdParams) -> ActionResult:
     here is harmless and guarantees Hub picks up the change even if the
     auth-gw cascade was interrupted.
     """
-    try:
-        result = await post_uninstall_app(ctx, params.app_id)
-    except Exception as exc:
-        log.warning("uninstall_app %s: %s", params.app_id, exc, exc_info=True)
+    # Same friendly/partial -> canonical app_id resolution as install.
+    app_id, candidates = await resolve_app_id(ctx, params.app_id)
+    if app_id is None:
+        if candidates:
+            return ActionResult.error(
+                f"'{params.app_id}' matches several apps: "
+                f"{', '.join(candidates)}. Which one should I uninstall?"
+            )
         return ActionResult.error(
-            f"Failed to uninstall '{params.app_id}': {str(exc)[:200]}"
+            f"No Marketplace app matches '{params.app_id}'."
         )
 
-    await _invalidate_kernel_caches(ctx, params.app_id)
+    try:
+        result = await post_uninstall_app(ctx, app_id)
+    except Exception as exc:
+        log.warning("uninstall_app %s: %s", app_id, exc, exc_info=True)
+        return ActionResult.error(
+            f"Failed to uninstall '{app_id}': {str(exc)[:200]}"
+        )
+
+    await _invalidate_kernel_caches(ctx, app_id)
 
     return ActionResult.success(
         data=result,
         summary=(
-            f"Uninstalled '{params.app_id}'. "
+            f"Uninstalled '{app_id}'. "
             f"Active installs remaining for that app: "
             f"{result.get('install_count', '?')}."
         ),
