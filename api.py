@@ -57,9 +57,13 @@ async def search_marketplace_apps(
     category: str = "",
     limit: int = 20,
 ) -> list[dict]:
-    params: dict[str, Any] = {"limit": min(max(int(limit), 1), 50)}
+    # Auth-gw GET /v1/marketplace/apps reads `search` + `per_page` (NOT `q` /
+    # `limit`). Sending the wrong names made every query return the FULL
+    # catalog unfiltered (the param never reached the LIKE filter). Match the
+    # endpoint's contract so name/description/tag filtering actually applies.
+    params: dict[str, Any] = {"per_page": min(max(int(limit), 1), 50)}
     if query:
-        params["q"] = query
+        params["search"] = query
     if category:
         params["category"] = category
     resp = await ctx.http.get(
@@ -199,6 +203,13 @@ async def resolve_app_id(ctx, term: str) -> tuple[str | None, list[str]]:
     if uniq:
         # ambiguous — surface display names so the caller can disambiguate
         return None, [(_name(m) or _aid(m)) for m in matches][:8]
+    # 4. The server already filtered by name/description/tags. If it narrowed
+    #    to exactly one app, trust it — covers semantic terms absent from the
+    #    app_id/display_name but present in the description (e.g. 'telegram'
+    #    → tg-bot whose description mentions Telegram). A broad/no-match query
+    #    falls back to the full catalog above, so len==1 here is meaningful.
+    if len(apps) == 1:
+        return _aid(apps[0]), []
     return None, []
 
 
