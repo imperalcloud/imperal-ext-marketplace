@@ -111,12 +111,13 @@ class AppProjection(sdl.Entity, sdl.Categorized, sdl.Rated, sdl.Versioned):
         return data
 
 
-class SearchAppsResult(BaseModel):
-    """Federal V23 — return shape for search_marketplace."""
-    query: str
-    category: str
-    total: int
-    apps: list[AppProjection]
+class SearchAppsResult(sdl.EntityList[AppProjection]):
+    """search_marketplace return shape — a REAL sdl.EntityList[AppProjection]
+    (items=[...], total=..., x-sdl='entity-list'). The echoed query/category
+    scalars are kept as extra typed fields (EntityList is a pydantic BaseModel,
+    so additive fields are allowed). NO legacy {apps:[dict],total} wrapper."""
+    query: str = ""
+    category: str = ""
 
 
 class AppDetailsResult(sdl.Entity, sdl.Categorized, sdl.Rated, sdl.Versioned):
@@ -178,10 +179,11 @@ class InstalledAppEntry(sdl.Entity, sdl.Categorized, sdl.Versioned):
         return data
 
 
-class InstalledAppsResult(BaseModel):
-    """Federal V23 — return shape for list_my_installed."""
-    total: int
-    apps: list[InstalledAppEntry]
+class InstalledAppsResult(sdl.EntityList[InstalledAppEntry]):
+    """list_my_installed return shape — a REAL sdl.EntityList[InstalledAppEntry]
+    (items=[...], total=..., x-sdl='entity-list'). NO legacy {apps:[dict],total}
+    wrapper."""
+    pass
 
 
 class RecommendPick(sdl.Entity):
@@ -200,11 +202,14 @@ class RecommendPick(sdl.Entity):
         return data
 
 
-class RecommendResult(BaseModel):
-    """Federal V23 — return shape for recommend_for_intent."""
-    user_need: str
-    picks: list[RecommendPick]
-    considered_count: int
+class RecommendResult(sdl.EntityList[RecommendPick]):
+    """recommend_for_intent return shape — a REAL sdl.EntityList[RecommendPick]
+    (items=[...], x-sdl='entity-list'). The echoed user_need and the
+    considered_count scalar are kept as extra typed fields (additive on the
+    pydantic EntityList). NO legacy {picks:[dict],user_need,considered_count}
+    wrapper."""
+    user_need: str = ""
+    considered_count: int = 0
 
 
 class InstallResult(sdl.Entity):

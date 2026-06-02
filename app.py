@@ -20,7 +20,7 @@ SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text()
 
 ext = Extension(
     "marketplace",
-    version="1.0.0",
+    version="1.1.0",
     capabilities=[
         "marketplace:read",
         "marketplace:write",
@@ -37,6 +37,7 @@ ext = Extension(
     ),
     icon="icon.svg",
     actions_explicit=True,
+    system=True,  # Imperal-owned platform app — always accessible, no explicit install.
 )
 
 

@@ -1,8 +1,8 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.2.0",
+  "sdk_version": "5.2.1",
   "app_id": "marketplace",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "Marketplace",
   "description": "Browse, discover and install apps in Imperal Marketplace from chat. Webbee can recommend apps matching what you need, show details and reviews, install or remove apps with confirmation.",
   "icon": "icon.svg",
@@ -66,7 +66,552 @@
         "title": "SearchAppsParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "$defs": {
+          "AppProjection": {
+            "description": "Slim app snapshot returned in list/search responses.\n\nSDL-additive (non-breaking): subclasses sdl.Entity + facets while keeping\nevery existing field verbatim. Canonical id/title are derived from\napp_id/display_name via a mode=\"before\" validator so existing dict\nconstruction (``AppProjection(**projected_dict)``) keeps working unchanged.",
+            "properties": {
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Version"
+              },
+              "semver": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Semver",
+                "x-sdl-role": "core.semver"
+              },
+              "revision": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Revision",
+                "x-sdl-role": "core.revision"
+              },
+              "revision_of": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Ref"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "x-sdl-role": "core.revision_of"
+              },
+              "is_latest": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Latest",
+                "x-sdl-role": "core.is_latest"
+              },
+              "content_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Content Hash",
+                "x-sdl-role": "core.content_hash"
+              },
+              "channel": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "stable",
+                      "beta",
+                      "rc",
+                      "nightly",
+                      "dev"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Channel",
+                "x-sdl-role": "core.channel"
+              },
+              "released_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Released At",
+                "x-sdl-role": "core.released_at"
+              },
+              "rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Rating",
+                "x-sdl-role": "rating.rating"
+              },
+              "max_score": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Max Score",
+                "x-sdl-role": "rating.max_score"
+              },
+              "rating_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Rating Count",
+                "x-sdl-role": "rating.rating_count"
+              },
+              "distribution": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Distribution",
+                "x-sdl-role": "rating.distribution"
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tags"
+              },
+              "categories": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Categories",
+                "x-sdl-role": "content.categories"
+              },
+              "topics": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Topics",
+                "x-sdl-role": "content.topics"
+              },
+              "keywords": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Keywords",
+                "x-sdl-role": "content.keywords"
+              },
+              "labels": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Labels",
+                "x-sdl-role": "content.labels"
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              },
+              "display_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Display Name"
+              },
+              "short_description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Short Description"
+              },
+              "category": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Category"
+              },
+              "install_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Install Count"
+              },
+              "avg_rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Avg Rating"
+              },
+              "review_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Review Count"
+              },
+              "featured": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Featured"
+              },
+              "system": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "System"
+              },
+              "is_installed": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Installed"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "AppProjection",
+            "type": "object",
+            "x-sdl": "entity"
+          },
+          "Ref": {
+            "description": "Lightweight reference to another entity (parent/related/list-item/cross-app).\n\nCarries ``title`` so the kernel can render/resolve without a second lookup.",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "kind": {
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "title": "Ref",
+            "type": "object"
+          }
+        },
+        "description": "search_marketplace return shape — a REAL sdl.EntityList[AppProjection]\n(items=[...], total=..., x-sdl='entity-list'). The echoed query/category\nscalars are kept as extra typed fields (EntityList is a pydantic BaseModel,\nso additive fields are allowed). NO legacy {apps:[dict],total} wrapper.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/AppProjection"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          },
+          "category": {
+            "default": "",
+            "title": "Category",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "SearchAppsResult",
+        "type": "object",
+        "x-sdl": "entity-list"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -95,7 +640,544 @@
         "title": "AppIdParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "$defs": {
+          "Ref": {
+            "description": "Lightweight reference to another entity (parent/related/list-item/cross-app).\n\nCarries ``title`` so the kernel can render/resolve without a second lookup.",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "kind": {
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "title": "Ref",
+            "type": "object"
+          }
+        },
+        "additionalProperties": true,
+        "description": "Federal V23 — return shape for get_app_details. Loose dict since\nupstream detail payload carries variable metadata fields.\n\nSDL-additive (non-breaking): subclasses sdl.Entity + facets, keeps every\nexisting field plus ``extra=\"allow\"`` so the variable upstream detail\npayload (price tiers, etc.) still passes through unchanged. The x-sdl\nmarker is preserved in model_config so the platform still detects this as\nan SDL entity from its return_schema.",
+        "properties": {
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Version"
+          },
+          "semver": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Semver",
+            "x-sdl-role": "core.semver"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Revision",
+            "x-sdl-role": "core.revision"
+          },
+          "revision_of": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/Ref"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "x-sdl-role": "core.revision_of"
+          },
+          "is_latest": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Latest",
+            "x-sdl-role": "core.is_latest"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Content Hash",
+            "x-sdl-role": "core.content_hash"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "enum": [
+                  "stable",
+                  "beta",
+                  "rc",
+                  "nightly",
+                  "dev"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Channel",
+            "x-sdl-role": "core.channel"
+          },
+          "released_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Released At",
+            "x-sdl-role": "core.released_at"
+          },
+          "rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rating",
+            "x-sdl-role": "rating.rating"
+          },
+          "max_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Max Score",
+            "x-sdl-role": "rating.max_score"
+          },
+          "rating_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rating Count",
+            "x-sdl-role": "rating.rating_count"
+          },
+          "distribution": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Distribution",
+            "x-sdl-role": "rating.distribution"
+          },
+          "tags": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Tags"
+          },
+          "categories": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/Ref"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Categories",
+            "x-sdl-role": "content.categories"
+          },
+          "topics": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Topics",
+            "x-sdl-role": "content.topics"
+          },
+          "keywords": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Keywords",
+            "x-sdl-role": "content.keywords"
+          },
+          "labels": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/$defs/Ref"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Labels",
+            "x-sdl-role": "content.labels"
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "app_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "App Id"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Display Name"
+          },
+          "short_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Short Description"
+          },
+          "long_description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Long Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Category"
+          },
+          "install_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Install Count"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Avg Rating"
+          },
+          "review_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Review Count"
+          },
+          "featured": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Featured"
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "System"
+          },
+          "is_installed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Is Installed"
+          },
+          "author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Author"
+          },
+          "homepage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Homepage"
+          },
+          "license": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "License"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "AppDetailsResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -109,8 +1191,410 @@
       "chain_callable": true,
       "effects": [],
       "id_projection": "",
-      "params_schema": {},
-      "return_schema": {},
+      "params_schema": {
+        "description": "Federal V17 — no-arg chat.function still needs a typed param model.",
+        "properties": {},
+        "title": "EmptyParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "InstalledAppEntry": {
+            "description": "One installed-app row. SDL-additive: sdl.Entity + facets, existing\nfields kept verbatim; id/title derived from app_id/display_name.",
+            "properties": {
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Version"
+              },
+              "semver": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Semver",
+                "x-sdl-role": "core.semver"
+              },
+              "revision": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Revision",
+                "x-sdl-role": "core.revision"
+              },
+              "revision_of": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Ref"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "x-sdl-role": "core.revision_of"
+              },
+              "is_latest": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Latest",
+                "x-sdl-role": "core.is_latest"
+              },
+              "content_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Content Hash",
+                "x-sdl-role": "core.content_hash"
+              },
+              "channel": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "stable",
+                      "beta",
+                      "rc",
+                      "nightly",
+                      "dev"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Channel",
+                "x-sdl-role": "core.channel"
+              },
+              "released_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Released At",
+                "x-sdl-role": "core.released_at"
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tags",
+                "x-sdl-role": "content.tags"
+              },
+              "categories": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Categories",
+                "x-sdl-role": "content.categories"
+              },
+              "topics": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Topics",
+                "x-sdl-role": "content.topics"
+              },
+              "keywords": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Keywords",
+                "x-sdl-role": "content.keywords"
+              },
+              "labels": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Labels",
+                "x-sdl-role": "content.labels"
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              },
+              "display_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Display Name"
+              },
+              "category": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Category"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "InstalledAppEntry",
+            "type": "object",
+            "x-sdl": "entity"
+          },
+          "Ref": {
+            "description": "Lightweight reference to another entity (parent/related/list-item/cross-app).\n\nCarries ``title`` so the kernel can render/resolve without a second lookup.",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "kind": {
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "title": "Ref",
+            "type": "object"
+          }
+        },
+        "description": "list_my_installed return shape — a REAL sdl.EntityList[InstalledAppEntry]\n(items=[...], total=..., x-sdl='entity-list'). NO legacy {apps:[dict],total}\nwrapper.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/InstalledAppEntry"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "InstalledAppsResult",
+        "type": "object",
+        "x-sdl": "entity-list"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -139,7 +1623,155 @@
         "title": "RecommendParams",
         "type": "object"
       },
-      "return_schema": {},
+      "return_schema": {
+        "$defs": {
+          "RecommendPick": {
+            "description": "One ranked recommendation pick. SDL-additive: sdl.Entity, existing\nfields kept verbatim; id/title derived from app_id (no human-name field\non this projection, so title falls back to app_id).",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "app_id": {
+                "default": "",
+                "title": "App Id",
+                "type": "string"
+              },
+              "reason": {
+                "default": "",
+                "title": "Reason",
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "RecommendPick",
+            "type": "object",
+            "x-sdl": "entity"
+          }
+        },
+        "description": "recommend_for_intent return shape — a REAL sdl.EntityList[RecommendPick]\n(items=[...], x-sdl='entity-list'). The echoed user_need and the\nconsidered_count scalar are kept as extra typed fields (additive on the\npydantic EntityList). NO legacy {picks:[dict],user_need,considered_count}\nwrapper.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/RecommendPick"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "user_need": {
+            "default": "",
+            "title": "User Need",
+            "type": "string"
+          },
+          "considered_count": {
+            "default": 0,
+            "title": "Considered Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "RecommendResult",
+        "type": "object",
+        "x-sdl": "entity-list"
+      },
       "event": "",
       "background": false,
       "long_running": false,
@@ -170,8 +1802,136 @@
         "title": "AppIdParams",
         "type": "object"
       },
-      "return_schema": {},
-      "event": "",
+      "return_schema": {
+        "additionalProperties": true,
+        "description": "Federal V24 — return shape for install_app (write).\n\nLoose because auth-gw /v1/marketplace/{app_id}/install response carries\nserver-side install metadata that may evolve. SDL-additive: subclasses\nsdl.Entity (id/title from app_id), keeps every existing field plus\n``extra=\"allow\"`` and the x-sdl marker.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "app_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "App Id"
+          },
+          "install_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Install Count"
+          },
+          "installed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Installed At"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Success"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "InstallResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "marketplace.app_installed",
       "background": false,
       "long_running": false,
       "scopes": [],
@@ -201,8 +1961,136 @@
         "title": "AppIdParams",
         "type": "object"
       },
-      "return_schema": {},
-      "event": "",
+      "return_schema": {
+        "additionalProperties": true,
+        "description": "Federal V24 — return shape for uninstall_app (destructive).\n\nSDL-additive: subclasses sdl.Entity (id/title from app_id), keeps every\nexisting field plus ``extra=\"allow\"`` and the x-sdl marker.",
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Id"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "kind": {
+            "default": "",
+            "title": "Kind",
+            "type": "string"
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Subtitle"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Description"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Status"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Url"
+          },
+          "app_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "App Id"
+          },
+          "install_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Install Count"
+          },
+          "uninstalled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Uninstalled At"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Success"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "UninstallResult",
+        "type": "object",
+        "x-sdl": "entity"
+      },
+      "event": "marketplace.app_uninstalled",
       "background": false,
       "long_running": false,
       "scopes": [],

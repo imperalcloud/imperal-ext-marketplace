@@ -81,10 +81,10 @@ async def fn_search_marketplace(ctx, params: SearchAppsParams) -> ActionResult:
         if all_projected:
             return ActionResult.success(
                 data={
+                    "items": all_projected,
+                    "total": len(all_projected),
                     "query": params.query,
                     "category": params.category or "",
-                    "total": len(all_projected),
-                    "apps": all_projected,
                 },
                 summary=(
                     f"No exact match for '{params.query}' — showing all "
@@ -99,10 +99,10 @@ async def fn_search_marketplace(ctx, params: SearchAppsParams) -> ActionResult:
     )
     return ActionResult.success(
         data={
+            "items": projected,
+            "total": len(projected),
             "query": params.query,
             "category": params.category or "",
-            "total": len(projected),
-            "apps": projected,
         },
         summary=summary,
     )

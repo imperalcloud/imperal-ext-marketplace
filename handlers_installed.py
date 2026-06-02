@@ -53,7 +53,7 @@ async def fn_list_my_installed(ctx, params: EmptyParams) -> ActionResult:
         if isinstance(e, dict) and not e.get("system")
     ]
     return ActionResult.success(
-        data={"total": len(user_installed), "apps": user_installed},
+        data={"items": user_installed, "total": len(user_installed)},
         summary=f"You have {len(user_installed)} app(s) installed.",
     )
 
@@ -118,7 +118,8 @@ async def fn_recommend_for_intent(ctx, params: RecommendParams) -> ActionResult:
 
     if not candidates:
         return ActionResult.success(
-            data={"user_need": params.user_need, "picks": [], "considered_count": 0},
+            data={"items": [], "total": 0, "user_need": params.user_need,
+                  "considered_count": 0},
             summary="No Marketplace apps available right now.",
         )
 
@@ -154,8 +155,9 @@ async def fn_recommend_for_intent(ctx, params: RecommendParams) -> ActionResult:
 
     return ActionResult.success(
         data={
+            "items": picks,
+            "total": len(picks),
             "user_need": params.user_need,
-            "picks": picks,
             "considered_count": len(catalog_summary),
         },
         summary=f"Top {len(picks)} app(s) for: {params.user_need[:80]}.",
