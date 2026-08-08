@@ -2,7 +2,7 @@
   "manifest_schema_version": 3,
   "sdk_version": "5.9.13",
   "app_id": "marketplace",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "name": "Marketplace",
   "description": "Browse, discover and install apps in Imperal Marketplace from chat. Webbee can recommend apps matching what you need, show details and reviews, install or remove apps with confirmation.",
   "icon": "icon.svg",
