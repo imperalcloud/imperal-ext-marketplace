@@ -120,8 +120,13 @@ async def fn_uninstall_app(ctx, params: AppIdParams) -> ActionResult:
     here is harmless and guarantees Hub picks up the change even if the
     auth-gw cascade was interrupted.
     """
-    # Same friendly/partial -> canonical app_id resolution as install.
-    app_id, candidates = await resolve_app_id(ctx, params.app_id)
+    # Resolve against what the user ACTUALLY HAS first, then the catalog.
+    # The catalog is not a superset of the user's installs (delisted apps
+    # like 'spotify' 404 in the catalog yet are installed), so uninstall
+    # must never be gated on catalog membership.
+    app_id, candidates = await resolve_app_id(
+        ctx, params.app_id, prefer_installed=True,
+    )
     if app_id is None:
         if candidates:
             return ActionResult.error(
@@ -129,7 +134,8 @@ async def fn_uninstall_app(ctx, params: AppIdParams) -> ActionResult:
                 f"{', '.join(candidates)}. Which one should I uninstall?"
             )
         return ActionResult.error(
-            f"No Marketplace app matches '{params.app_id}'."
+            f"You don't have an app matching '{params.app_id}' installed. "
+            "Ask me to list your installed apps to see the exact names."
         )
 
     try:

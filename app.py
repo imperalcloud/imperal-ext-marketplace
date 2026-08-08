@@ -20,7 +20,7 @@ SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text()
 
 ext = Extension(
     "marketplace",
-    version="1.1.0",
+    version="1.2.0",
     capabilities=[
         "marketplace:read",
         "marketplace:write",

@@ -56,12 +56,20 @@ async def search_marketplace_apps(
     query: str = "",
     category: str = "",
     limit: int = 20,
+    page: int = 1,
 ) -> list[dict]:
     # Auth-gw GET /v1/marketplace/apps reads `search` + `per_page` (NOT `q` /
     # `limit`). Sending the wrong names made every query return the FULL
     # catalog unfiltered (the param never reached the LIKE filter). Match the
     # endpoint's contract so name/description/tag filtering actually applies.
+    #
+    # per_page is clamped to 50 HARD: measured on production, per_page=51+
+    # returns an EMPTY list rather than a clamped page, so an over-large ask
+    # silently produced "no apps found". Callers who want everything use
+    # list_all_marketplace_apps(), which pages at this ceiling.
     params: dict[str, Any] = {"per_page": min(max(int(limit), 1), 50)}
+    if page and int(page) > 1:
+        params["page"] = int(page)
     if query:
         params["search"] = query
     if category:
@@ -81,6 +89,99 @@ async def search_marketplace_apps(
     if isinstance(data, dict):
         return data.get("apps") or data.get("results") or []
     return []
+
+
+_PAGE_SIZE_MAX = 50          # auth-gw returns ZERO rows for per_page > 50
+_CATALOG_HARD_CAP = 500      # stop paging even if the server keeps yielding
+
+
+async def list_all_marketplace_apps(
+    ctx,
+    *,
+    query: str = "",
+    category: str = "",
+) -> list[dict]:
+    """Every app in the catalog, paged — not just the first screenful.
+
+    Two server quirks make the naive call lie:
+
+      * ``per_page`` above 50 returns an EMPTY list, not a clamped page --
+        so asking for "everything" (per_page=200) yielded ZERO apps and the
+        catalog looked empty.
+      * without paging the caller only ever saw the first 20-50 rows and had
+        no way to know more existed.
+
+    So page at exactly the server's ceiling until a short/empty page arrives.
+    """
+    out: list[dict] = []
+    seen: set[str] = set()
+    page = 1
+    while len(out) < _CATALOG_HARD_CAP:
+        batch = await search_marketplace_apps(
+            ctx, query=query, category=category,
+            limit=_PAGE_SIZE_MAX, page=page,
+        )
+        if not batch:
+            break
+        for a in batch:
+            aid = a.get("app_id") or a.get("id") or ""
+            # The server paginates over a mutable table; de-dup defensively so
+            # a row shifting between pages can't be listed (or counted) twice.
+            if aid and aid not in seen:
+                seen.add(aid)
+                out.append(a)
+        if len(batch) < _PAGE_SIZE_MAX:
+            break
+        page += 1
+    return out
+
+
+async def get_app_reviews(ctx, app_id: str, *, limit: int = 20) -> dict:
+    """Reviews + star distribution for one app.
+
+    Returns the server payload as-is: {reviews:[...], total, distribution:{}}.
+    Never raises -- a missing/failed review list must not break app details.
+    """
+    try:
+        resp = await ctx.http.get(
+            f"{_AUTH_GW}/v1/marketplace/apps/{app_id}/reviews",
+            params={"per_page": min(max(int(limit), 1), _PAGE_SIZE_MAX)},
+            headers=_user_jwt_headers(ctx),
+            timeout=10.0,
+        )
+    except Exception as exc:
+        log.debug("get_app_reviews %s non-fatal: %s", app_id, exc)
+        return {}
+    if resp.status_code != 200:
+        log.debug("get_app_reviews %s: HTTP %s", app_id, resp.status_code)
+        return {}
+    data = resp.json()
+    return data if isinstance(data, dict) else {}
+
+
+async def post_app_review(
+    ctx, app_id: str, *, rating: int, body: str, title: str = "",
+) -> dict:
+    """Leave (or update) the caller's review — POST {rating, body, title}.
+
+    Raises on HTTP error so the handler can surface the server's own message
+    (e.g. "install the app before reviewing it") instead of a generic failure.
+    """
+    payload: dict[str, Any] = {"rating": int(rating), "body": body}
+    if title:
+        payload["title"] = title
+    resp = await ctx.http.post(
+        f"{_AUTH_GW}/v1/marketplace/apps/{app_id}/reviews",
+        json=payload,
+        headers=_user_jwt_headers(ctx),
+        timeout=15.0,
+    )
+    if resp.status_code not in (200, 201):
+        raise RuntimeError(
+            f"review HTTP {resp.status_code}: {resp.text()[:300]}"
+        )
+    data = resp.json()
+    return data if isinstance(data, dict) else {}
 
 
 async def get_marketplace_app_details(ctx, app_id: str) -> dict | None:
@@ -153,7 +254,9 @@ def _norm_app_token(s) -> str:
     return re.sub(r"[^a-z0-9]+", "", str(s or "").lower())
 
 
-async def resolve_app_id(ctx, term: str) -> tuple[str | None, list[str]]:
+async def resolve_app_id(
+    ctx, term: str, *, prefer_installed: bool = False,
+) -> tuple[str | None, list[str]]:
     """Resolve a user-supplied app reference to a canonical Marketplace app_id.
 
     The classifier/step-extractor frequently passes the user's literal word
@@ -161,6 +264,17 @@ async def resolve_app_id(ctx, term: str) -> tuple[str | None, list[str]]:
     canonical id ('microsoft-ads' / 'tg-bot'); the install/uninstall endpoints
     then reject it with HTTP 400 "App not found or not active". Resolve against
     the catalog before dispatching.
+
+    ``prefer_installed`` (uninstall path) searches the user's INSTALLED apps
+    FIRST and, crucially, treats them as a valid universe on their own.
+
+    That second part is the actual bug fix. The catalog is not a superset of
+    what a user has: 'spotify' and 'google-drive-connector' are installed for
+    real users yet return HTTP 404 from /v1/marketplace/apps/{id} -- delisted,
+    or never listed. Resolving uninstall purely against the catalog meant
+    "uninstall spotify" answered "no Marketplace app matches 'spotify'" while
+    Spotify sat right there in the user's own app list. Anything installed
+    must always be removable, listed or not.
 
     Returns ``(app_id, candidates)``:
       * ``(canonical_id, [])``  — unique resolution (or input already canonical)
@@ -171,43 +285,61 @@ async def resolve_app_id(ctx, term: str) -> tuple[str | None, list[str]]:
     if not term_n:
         return None, []
 
-    apps = await search_marketplace_apps(ctx, query=term, limit=50)
-    if not apps:
-        apps = await search_marketplace_apps(ctx, query="", limit=50)
-
     def _aid(a: dict) -> str:
         return a.get("app_id") or a.get("id") or ""
 
     def _name(a: dict) -> str:
         return a.get("display_name") or a.get("name") or ""
 
-    # 1. exact canonical app_id (also covers the already-correct case)
-    for a in apps:
-        if _norm_app_token(_aid(a)) == term_n:
-            return _aid(a), []
-    # 2. exact display name
-    for a in apps:
-        if _norm_app_token(_name(a)) == term_n:
-            return _aid(a), []
-    # 3. substring / prefix match — accept only when it resolves uniquely
-    matches = []
-    for a in apps:
-        aid_n = _norm_app_token(_aid(a))
-        name_n = _norm_app_token(_name(a))
-        if (term_n in aid_n or term_n in name_n
-                or aid_n.startswith(term_n) or name_n.startswith(term_n)):
-            matches.append(a)
-    uniq = {_aid(m) for m in matches if _aid(m)}
-    if len(uniq) == 1:
-        return next(iter(uniq)), []
-    if uniq:
-        # ambiguous — surface display names so the caller can disambiguate
-        return None, [(_name(m) or _aid(m)) for m in matches][:8]
-    # 4. The server already filtered by name/description/tags. If it narrowed
-    #    to exactly one app, trust it — covers semantic terms absent from the
-    #    app_id/display_name but present in the description (e.g. 'telegram'
-    #    → tg-bot whose description mentions Telegram). A broad/no-match query
-    #    falls back to the full catalog above, so len==1 here is meaningful.
+    def _match(apps: list[dict]) -> tuple[str | None, list[str]] | None:
+        """Exact-id → exact-name → unique-substring. None = no verdict."""
+        for a in apps:
+            if _norm_app_token(_aid(a)) == term_n:
+                return _aid(a), []
+        for a in apps:
+            if _norm_app_token(_name(a)) == term_n:
+                return _aid(a), []
+        matches = []
+        for a in apps:
+            aid_n = _norm_app_token(_aid(a))
+            name_n = _norm_app_token(_name(a))
+            if (term_n in aid_n or term_n in name_n
+                    or aid_n.startswith(term_n) or name_n.startswith(term_n)):
+                matches.append(a)
+        uniq = {_aid(m) for m in matches if _aid(m)}
+        if len(uniq) == 1:
+            return next(iter(uniq)), []
+        if uniq:
+            return None, [(_name(m) or _aid(m)) for m in matches][:8]
+        return None
+
+    if prefer_installed:
+        try:
+            installed = await get_installed_apps_for_user(ctx)
+        except Exception as exc:          # never block uninstall on this
+            log.debug("resolve_app_id installed lookup non-fatal: %s", exc)
+            installed = []
+        # System apps (admin/billing/marketplace) are always-on and cannot be
+        # uninstalled; excluding them keeps 'mail' from colliding with them
+        # and keeps the ambiguity list honest.
+        owned = [e for e in installed
+                 if isinstance(e, dict) and _aid(e) and not e.get("system")]
+        verdict = _match(owned)
+        if verdict is not None:
+            return verdict
+
+    apps = await search_marketplace_apps(ctx, query=term, limit=50)
+    if not apps:
+        apps = await search_marketplace_apps(ctx, query="", limit=50)
+
+    verdict = _match(apps)
+    if verdict is not None:
+        return verdict
+    # The server already filtered by name/description/tags. If it narrowed
+    # to exactly one app, trust it — covers semantic terms absent from the
+    # app_id/display_name but present in the description (e.g. 'telegram'
+    # → tg-bot whose description mentions Telegram). A broad/no-match query
+    # falls back to the full catalog above, so len==1 here is meaningful.
     if len(apps) == 1:
         return _aid(apps[0]), []
     return None, []

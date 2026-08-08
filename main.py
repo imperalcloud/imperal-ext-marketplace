@@ -20,6 +20,7 @@ if _dir not in sys.path:
 _MODULES = (
     "app", "api", "models",
     "handlers", "handlers_installed", "handlers_lifecycle",
+    "handlers_bulk",
     "skeleton",
 )
 for _m in [k for k in sys.modules if k in _MODULES]:
@@ -30,4 +31,5 @@ from app import ext, chat                # noqa: E402, F401
 import handlers                           # noqa: E402, F401
 import handlers_installed                 # noqa: E402, F401
 import handlers_lifecycle                 # noqa: E402, F401
+import handlers_bulk                      # noqa: E402, F401
 import skeleton                           # noqa: E402, F401

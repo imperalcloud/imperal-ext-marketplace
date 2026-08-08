@@ -30,6 +30,14 @@ _APP_PROJECTION_KEYS = (
     "app_id", "display_name", "short_description", "category",
     "version", "install_count", "avg_rating", "review_count",
     "featured", "tags", "system", "is_installed",
+    # Identity + authorship. These were being dropped on the floor: the
+    # catalog returns them on every row, but the projection listed only the
+    # 12 keys above, so "who made this app", "what does it cost" and "how
+    # many tools does it have" were unanswerable from chat -- and the app's
+    # REAL developer id never reached the caller at all.
+    "developer_id", "developer_name", "developer_nickname",
+    "pricing_model", "price_range", "tool_count", "total_actions",
+    "created_at",
 )
 
 
