@@ -15,7 +15,12 @@ import logging
 from imperal_sdk.chat import ActionResult
 
 from app import chat
-from api import get_marketplace_app_details, search_marketplace_apps
+from api import (
+    get_marketplace_app_details,
+    list_all_marketplace_apps,
+    search_marketplace_apps,
+)
+from store_search import rank_apps
 from models import (
     AppDetailsResult,
     AppIdParams,
@@ -59,14 +64,49 @@ def _project_app(app: dict) -> dict:
     ),
 )
 async def fn_search_marketplace(ctx, params: SearchAppsParams) -> ActionResult:
-    """Search Marketplace and return a slim list of matching app cards."""
+    """Search Marketplace and return a slim list of matching app cards.
+
+    RANKED HERE, NOT BY THE GATEWAY.
+    ---------------------------------
+    This used to forward the query as ``?search=`` and let a SQL LIKE decide.
+    That answers only when the user already knows an app's name: "todo list",
+    "kanban", "task tracker" and "vikuna" all returned nothing while the app's
+    own description said exactly those words.
+
+    So the catalog is fetched whole and ranked in-process by the same Store
+    Engine the Panel's launchpad uses -- same weights, same synonyms, same
+    typo budget, same IDF coverage pass. The point is not merely "better
+    results": it is that the SAME words must produce the SAME answer whether
+    they were typed into the Start menu or into this app. Two ranking systems
+    that disagree is worse than one imperfect ranking system.
+
+    Cost: the catalog is small (measured: well under the gateway's 50-row
+    page) and `list_all_marketplace_apps` already pages it. One fetch, then
+    pure CPU.
+    """
     try:
-        apps = await search_marketplace_apps(
-            ctx,
-            query=params.query,
-            category=params.category or "",
-            limit=int(params.limit or 20),
-        )
+        if params.query:
+            # Category is applied AFTER ranking, not by the server: narrowing
+            # first would hand the engine one category's handful of apps and
+            # it can only rank what it was given.
+            apps = await list_all_marketplace_apps(ctx, query="")
+            apps = rank_apps(apps, params.query)
+            if params.category:
+                wanted = params.category.strip().lower()
+                apps = [
+                    a for a in apps
+                    if str(a.get("category") or "").strip().lower() == wanted
+                ]
+            apps = apps[: int(params.limit or 20)]
+        else:
+            # No query = browsing. The server's own ordering is fine, and
+            # fetching the whole catalog to sort it locally would buy nothing.
+            apps = await search_marketplace_apps(
+                ctx,
+                query="",
+                category=params.category or "",
+                limit=int(params.limit or 20),
+            )
     except Exception as exc:
         log.warning("search_marketplace: %s", exc, exc_info=True)
         return ActionResult.error("Failed to search the Marketplace.")

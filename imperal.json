@@ -1,6 +1,6 @@
 {
   "manifest_schema_version": 3,
-  "sdk_version": "5.9.13",
+  "sdk_version": "5.11.0",
   "app_id": "marketplace",
   "version": "1.2.0",
   "name": "Marketplace",
@@ -502,6 +502,102 @@
                 ],
                 "default": null,
                 "title": "Is Installed"
+              },
+              "developer_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Id"
+              },
+              "developer_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Name"
+              },
+              "developer_nickname": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Nickname"
+              },
+              "pricing_model": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Pricing Model"
+              },
+              "price_range": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Price Range"
+              },
+              "tool_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tool Count"
+              },
+              "total_actions": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Total Actions"
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Created At"
               }
             },
             "required": [
@@ -2091,6 +2187,1717 @@
         "x-sdl": "entity"
       },
       "event": "marketplace.app_uninstalled",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "bulk_install_apps",
+      "description": "Install SEVERAL Marketplace apps in ONE call. Use whenever the user names more than one app to install ('install spotify and notes', 'add these three apps') — do NOT call install_app repeatedly. Accepts ids, display names or partial names. Confirmation gate fires once for the whole batch.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:install"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Target SEVERAL Marketplace apps at once (bulk install / uninstall).",
+        "properties": {
+          "app_ids": {
+            "description": "Apps to act on — ids, display names or partial names; each is resolved the same way the single-app tools resolve them. Examples: ['spotify','google-drive-connector','sql-db'] or ['Spotify','Google Drive']. Pass EVERY app the user named in ONE call — do not loop one-by-one.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "App Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "app_ids"
+        ],
+        "title": "BulkAppIdsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "additionalProperties": true,
+        "description": "Uniform outcome shape for bulk install / uninstall.\n\nPartial success is a first-class state: `succeeded` and `failed` are\nBOTH reported, so one unresolvable name never hides the apps that were\nactually acted on.",
+        "properties": {
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Succeeded",
+            "type": "array"
+          },
+          "failed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "success_count": {
+            "default": 0,
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "failure_count": {
+            "default": 0,
+            "title": "Failure Count",
+            "type": "integer"
+          }
+        },
+        "title": "BulkResult",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "bulk_uninstall_apps",
+      "description": "Uninstall SEVERAL apps in ONE call — the batch version of uninstall_app. Use whenever the user names more than one app to remove ('uninstall spotify, google drive and mysql', 'remove these apps', 'get rid of them'). Resolves against the user's INSTALLED apps, so delisted apps still uninstall. Confirmation gate fires once for the whole batch.",
+      "action_type": "destructive",
+      "chain_callable": true,
+      "effects": [
+        "delete:install"
+      ],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Target SEVERAL Marketplace apps at once (bulk install / uninstall).",
+        "properties": {
+          "app_ids": {
+            "description": "Apps to act on — ids, display names or partial names; each is resolved the same way the single-app tools resolve them. Examples: ['spotify','google-drive-connector','sql-db'] or ['Spotify','Google Drive']. Pass EVERY app the user named in ONE call — do not loop one-by-one.",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "App Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "app_ids"
+        ],
+        "title": "BulkAppIdsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "additionalProperties": true,
+        "description": "Uniform outcome shape for bulk install / uninstall.\n\nPartial success is a first-class state: `succeeded` and `failed` are\nBOTH reported, so one unresolvable name never hides the apps that were\nactually acted on.",
+        "properties": {
+          "action": {
+            "default": "",
+            "title": "Action",
+            "type": "string"
+          },
+          "succeeded": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Succeeded",
+            "type": "array"
+          },
+          "failed": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "success_count": {
+            "default": 0,
+            "title": "Success Count",
+            "type": "integer"
+          },
+          "failure_count": {
+            "default": 0,
+            "title": "Failure Count",
+            "type": "integer"
+          }
+        },
+        "title": "BulkResult",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "get_app_reviews",
+      "description": "Read the user reviews of one app — star rating, review text, who wrote it, whether they actually use the app, and the 1-5 star distribution. Use for 'what do people say about X', 'is X any good', 'show reviews for X'.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Read the reviews of one app.",
+        "properties": {
+          "app_id": {
+            "description": "App whose reviews to read — id, display name or partial.",
+            "title": "App Id",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "description": "Max reviews to return (1-50, newest first).",
+            "maximum": 50,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "title": "AppReviewsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "additionalProperties": true,
+        "description": "Reviews of one app + its star distribution.",
+        "properties": {
+          "app_id": {
+            "default": "",
+            "title": "App Id",
+            "type": "string"
+          },
+          "reviews": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Reviews",
+            "type": "array"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "distribution": {
+            "additionalProperties": true,
+            "title": "Distribution",
+            "type": "object"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Avg Rating"
+          }
+        },
+        "title": "ReviewsResult",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "review_app",
+      "description": "Leave (or update) YOUR review of an app — star rating 1-5 plus the review text. Use for 'review X', 'rate X 5 stars', 'leave a review saying ...'. Pass the user's wording VERBATIM as body. Posting again on the same app updates the existing review.",
+      "action_type": "write",
+      "chain_callable": true,
+      "effects": [
+        "create:review"
+      ],
+      "id_projection": "app_id",
+      "params_schema": {
+        "description": "Leave (or update) a review on an app.",
+        "properties": {
+          "app_id": {
+            "description": "App to review — id, display name or partial name.",
+            "title": "App Id",
+            "type": "string"
+          },
+          "rating": {
+            "description": "Star rating, 1 (worst) to 5 (best).",
+            "maximum": 5,
+            "minimum": 1,
+            "title": "Rating",
+            "type": "integer"
+          },
+          "body": {
+            "description": "The review text in the user's own words. Pass VERBATIM — never paraphrase or embellish what the user said.",
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "title": {
+            "default": "",
+            "description": "Optional short headline for the review.",
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id",
+          "rating",
+          "body"
+        ],
+        "title": "ReviewParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "additionalProperties": true,
+        "description": "Reviews of one app + its star distribution.",
+        "properties": {
+          "app_id": {
+            "default": "",
+            "title": "App Id",
+            "type": "string"
+          },
+          "reviews": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Reviews",
+            "type": "array"
+          },
+          "total": {
+            "default": 0,
+            "title": "Total",
+            "type": "integer"
+          },
+          "distribution": {
+            "additionalProperties": true,
+            "title": "Distribution",
+            "type": "object"
+          },
+          "avg_rating": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Avg Rating"
+          }
+        },
+        "title": "ReviewsResult",
+        "type": "object"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "browse_marketplace",
+      "description": "List the WHOLE Marketplace catalog with optional filters — every app, not just the first page. Filters (all optional, combined with AND): category, developer (real imperal_id, nickname or name), min_rating, installed_only, free_only. Sort by installs, rating, name or newest. Use for 'show me everything in the marketplace', 'all apps by X', 'top rated apps', 'what's in productivity'.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "List/filter the WHOLE catalog — every app, not just a first page.\n\nEvery filter is optional and they combine (AND). With no filter at all\nthis returns the entire Marketplace.",
+        "properties": {
+          "category": {
+            "default": "",
+            "description": "Filter by category (productivity, tools, marketing, analytics, seo, content, development, communication...). Case-insensitive.",
+            "title": "Category",
+            "type": "string"
+          },
+          "developer": {
+            "default": "",
+            "description": "Filter by app author — developer nickname ('seeu', 'dmitrii'), display name ('Ignat'), or the real developer imperal_id ('imp_u_XWnehlFBls'). Case-insensitive, partial allowed.",
+            "title": "Developer",
+            "type": "string"
+          },
+          "query": {
+            "default": "",
+            "description": "Free-text filter on app id, name, description and tags.",
+            "title": "Query",
+            "type": "string"
+          },
+          "installed_only": {
+            "default": false,
+            "description": "True = only apps the user already has installed. Default False = the whole catalog.",
+            "title": "Installed Only",
+            "type": "boolean"
+          },
+          "free_only": {
+            "default": false,
+            "description": "True = only apps with pricing_model 'free'.",
+            "title": "Free Only",
+            "type": "boolean"
+          },
+          "min_rating": {
+            "default": 0.0,
+            "description": "Only apps with an average rating >= this (0-5).",
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Min Rating",
+            "type": "number"
+          },
+          "sort": {
+            "default": "installs",
+            "description": "Sort order: 'installs' (most installed first, default), 'rating', 'name', 'newest', 'reviews'.",
+            "title": "Sort",
+            "type": "string"
+          },
+          "limit": {
+            "default": 100,
+            "description": "Max apps to return (1-500). Default 100.",
+            "maximum": 500,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "BrowseParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "AppProjection": {
+            "description": "Slim app snapshot returned in list/search responses.\n\nSDL-additive (non-breaking): subclasses sdl.Entity + facets while keeping\nevery existing field verbatim. Canonical id/title are derived from\napp_id/display_name via a mode=\"before\" validator so existing dict\nconstruction (``AppProjection(**projected_dict)``) keeps working unchanged.",
+            "properties": {
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Version"
+              },
+              "semver": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Semver",
+                "x-sdl-role": "core.semver"
+              },
+              "revision": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Revision",
+                "x-sdl-role": "core.revision"
+              },
+              "revision_of": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Ref"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "x-sdl-role": "core.revision_of"
+              },
+              "is_latest": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Latest",
+                "x-sdl-role": "core.is_latest"
+              },
+              "content_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Content Hash",
+                "x-sdl-role": "core.content_hash"
+              },
+              "channel": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "stable",
+                      "beta",
+                      "rc",
+                      "nightly",
+                      "dev"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Channel",
+                "x-sdl-role": "core.channel"
+              },
+              "released_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Released At",
+                "x-sdl-role": "core.released_at"
+              },
+              "rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Rating",
+                "x-sdl-role": "rating.rating"
+              },
+              "max_score": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Max Score",
+                "x-sdl-role": "rating.max_score"
+              },
+              "rating_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Rating Count",
+                "x-sdl-role": "rating.rating_count"
+              },
+              "distribution": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Distribution",
+                "x-sdl-role": "rating.distribution"
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tags"
+              },
+              "categories": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Categories",
+                "x-sdl-role": "content.categories"
+              },
+              "topics": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Topics",
+                "x-sdl-role": "content.topics"
+              },
+              "keywords": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Keywords",
+                "x-sdl-role": "content.keywords"
+              },
+              "labels": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Labels",
+                "x-sdl-role": "content.labels"
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              },
+              "display_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Display Name"
+              },
+              "short_description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Short Description"
+              },
+              "category": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Category"
+              },
+              "install_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Install Count"
+              },
+              "avg_rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Avg Rating"
+              },
+              "review_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Review Count"
+              },
+              "featured": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Featured"
+              },
+              "system": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "System"
+              },
+              "is_installed": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Installed"
+              },
+              "developer_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Id"
+              },
+              "developer_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Name"
+              },
+              "developer_nickname": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Nickname"
+              },
+              "pricing_model": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Pricing Model"
+              },
+              "price_range": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Price Range"
+              },
+              "tool_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tool Count"
+              },
+              "total_actions": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Total Actions"
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Created At"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "AppProjection",
+            "type": "object",
+            "x-sdl": "entity"
+          },
+          "Ref": {
+            "description": "Lightweight reference to another entity (parent/related/list-item/cross-app).\n\nCarries ``title`` so the kernel can render/resolve without a second lookup.",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "kind": {
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "title": "Ref",
+            "type": "object"
+          }
+        },
+        "description": "search_marketplace return shape — a REAL sdl.EntityList[AppProjection]\n(items=[...], total=..., x-sdl='entity-list'). The echoed query/category\nscalars are kept as extra typed fields (EntityList is a pydantic BaseModel,\nso additive fields are allowed). NO legacy {apps:[dict],total} wrapper.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/AppProjection"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          },
+          "category": {
+            "default": "",
+            "title": "Category",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "SearchAppsResult",
+        "type": "object",
+        "x-sdl": "entity-list"
+      },
+      "event": "",
+      "background": false,
+      "long_running": false,
+      "scopes": [],
+      "owner_chat_tool": "tool_marketplace_chat"
+    },
+    {
+      "name": "apps_by_developer",
+      "description": "Every app published by one developer, found by their REAL imperal_id (imp_u_*), nickname or display name. Use for 'what else did they write', 'apps by seeu', 'show everything from imp_u_...'.",
+      "action_type": "read",
+      "chain_callable": true,
+      "effects": [],
+      "id_projection": "",
+      "params_schema": {
+        "description": "Find every app published by one developer.",
+        "properties": {
+          "developer": {
+            "description": "The author to look up — their REAL imperal_id ('imp_u_XWnehlFBls'), their nickname ('seeu', 'bluebeeweb'), or their display name ('Ignat', 'Dmitrii').",
+            "title": "Developer",
+            "type": "string"
+          }
+        },
+        "required": [
+          "developer"
+        ],
+        "title": "DeveloperAppsParams",
+        "type": "object"
+      },
+      "return_schema": {
+        "$defs": {
+          "AppProjection": {
+            "description": "Slim app snapshot returned in list/search responses.\n\nSDL-additive (non-breaking): subclasses sdl.Entity + facets while keeping\nevery existing field verbatim. Canonical id/title are derived from\napp_id/display_name via a mode=\"before\" validator so existing dict\nconstruction (``AppProjection(**projected_dict)``) keeps working unchanged.",
+            "properties": {
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Version"
+              },
+              "semver": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Semver",
+                "x-sdl-role": "core.semver"
+              },
+              "revision": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Revision",
+                "x-sdl-role": "core.revision"
+              },
+              "revision_of": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/Ref"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "x-sdl-role": "core.revision_of"
+              },
+              "is_latest": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Latest",
+                "x-sdl-role": "core.is_latest"
+              },
+              "content_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Content Hash",
+                "x-sdl-role": "core.content_hash"
+              },
+              "channel": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "stable",
+                      "beta",
+                      "rc",
+                      "nightly",
+                      "dev"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Channel",
+                "x-sdl-role": "core.channel"
+              },
+              "released_at": {
+                "anyOf": [
+                  {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Released At",
+                "x-sdl-role": "core.released_at"
+              },
+              "rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Rating",
+                "x-sdl-role": "rating.rating"
+              },
+              "max_score": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Max Score",
+                "x-sdl-role": "rating.max_score"
+              },
+              "rating_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Rating Count",
+                "x-sdl-role": "rating.rating_count"
+              },
+              "distribution": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Distribution",
+                "x-sdl-role": "rating.distribution"
+              },
+              "tags": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tags"
+              },
+              "categories": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Categories",
+                "x-sdl-role": "content.categories"
+              },
+              "topics": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Topics",
+                "x-sdl-role": "content.topics"
+              },
+              "keywords": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Keywords",
+                "x-sdl-role": "content.keywords"
+              },
+              "labels": {
+                "anyOf": [
+                  {
+                    "items": {
+                      "$ref": "#/$defs/Ref"
+                    },
+                    "type": "array"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Labels",
+                "x-sdl-role": "content.labels"
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "kind": {
+                "default": "",
+                "title": "Kind",
+                "type": "string"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Subtitle"
+              },
+              "description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Description"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Status"
+              },
+              "url": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Url"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              },
+              "display_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Display Name"
+              },
+              "short_description": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Short Description"
+              },
+              "category": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Category"
+              },
+              "install_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Install Count"
+              },
+              "avg_rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Avg Rating"
+              },
+              "review_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Review Count"
+              },
+              "featured": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Featured"
+              },
+              "system": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "System"
+              },
+              "is_installed": {
+                "anyOf": [
+                  {
+                    "type": "boolean"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Is Installed"
+              },
+              "developer_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Id"
+              },
+              "developer_name": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Name"
+              },
+              "developer_nickname": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Developer Nickname"
+              },
+              "pricing_model": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Pricing Model"
+              },
+              "price_range": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Price Range"
+              },
+              "tool_count": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Tool Count"
+              },
+              "total_actions": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Total Actions"
+              },
+              "created_at": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "Created At"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ],
+            "title": "AppProjection",
+            "type": "object",
+            "x-sdl": "entity"
+          },
+          "Ref": {
+            "description": "Lightweight reference to another entity (parent/related/list-item/cross-app).\n\nCarries ``title`` so the kernel can render/resolve without a second lookup.",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
+                "title": "Id"
+              },
+              "kind": {
+                "title": "Kind",
+                "type": "string"
+              },
+              "title": {
+                "title": "Title",
+                "type": "string"
+              },
+              "app_id": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null,
+                "title": "App Id"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "title"
+            ],
+            "title": "Ref",
+            "type": "object"
+          }
+        },
+        "description": "search_marketplace return shape — a REAL sdl.EntityList[AppProjection]\n(items=[...], total=..., x-sdl='entity-list'). The echoed query/category\nscalars are kept as extra typed fields (EntityList is a pydantic BaseModel,\nso additive fields are allowed). NO legacy {apps:[dict],total} wrapper.",
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/$defs/AppProjection"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Total"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Page"
+          },
+          "has_more": {
+            "default": false,
+            "title": "Has More",
+            "type": "boolean"
+          },
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          },
+          "category": {
+            "default": "",
+            "title": "Category",
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "SearchAppsResult",
+        "type": "object",
+        "x-sdl": "entity-list"
+      },
+      "event": "",
       "background": false,
       "long_running": false,
       "scopes": [],
