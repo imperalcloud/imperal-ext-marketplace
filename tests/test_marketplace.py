@@ -365,3 +365,31 @@ def test_browse_with_no_filters_returns_the_whole_catalog():
     ctx = _Ctx(_HTTP(catalog=[_app(f"a{i}") for i in range(75)], installed=[]))
     res = asyncio.run(handlers_bulk.fn_browse_marketplace(ctx, BrowseParams()))
     assert res.data["total"] == 75, "browse must not stop at one page"
+
+
+def test_ranking_performance_with_10000_apps_catalog():
+    """Verify search scaling and responsiveness on 10,000+ catalog apps."""
+    import time
+    from store_search import rank_apps
+
+    apps = []
+    categories = ["productivity", "communication", "developer", "marketing", "analytics", "seo", "content", "utilities", "security", "ecommerce"]
+    for i in range(10000):
+        cat = categories[i % len(categories)]
+        apps.append({
+            "app_id": f"app-{i}",
+            "display_name": f"Productivity Tool {i}" if i % 3 == 0 else f"Analytics Helper {i}",
+            "description": f"Comprehensive tool for managing tasks and cloud workflows number {i}",
+            "category": cat,
+            "tags": ["cloud", "task", "automation", f"tag-{i%50}"],
+            "author": f"dev_{i%100}",
+            "rating": 4.5,
+            "install_count": i * 10,
+        })
+
+    t0 = time.perf_counter()
+    results = rank_apps(apps, "task manager automation")
+    elapsed_ms = (time.perf_counter() - t0) * 1000
+
+    assert len(results) > 0
+    assert elapsed_ms < 1000, f"Ranking took too long: {elapsed_ms:.2f}ms"
