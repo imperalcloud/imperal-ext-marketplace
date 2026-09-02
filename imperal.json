@@ -2263,7 +2263,7 @@
         "title": "BulkResult",
         "type": "object"
       },
-      "event": "",
+      "event": "marketplace.apps_bulk_installed",
       "background": false,
       "long_running": false,
       "scopes": [],
@@ -2340,7 +2340,7 @@
         "title": "BulkResult",
         "type": "object"
       },
-      "event": "",
+      "event": "marketplace.apps_bulk_uninstalled",
       "background": false,
       "long_running": false,
       "scopes": [],
@@ -2513,7 +2513,7 @@
         "title": "ReviewsResult",
         "type": "object"
       },
-      "event": "",
+      "event": "marketplace.review_created",
       "background": false,
       "long_running": false,
       "scopes": [],

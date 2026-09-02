@@ -103,6 +103,7 @@ def _bulk_result(action: str, ok: list[str], failed: list[str]) -> ActionResult:
     "bulk_install_apps",
     action_type="write",
     effects=["create:install"],
+    event="marketplace.apps_bulk_installed",
     data_model=BulkResult,
     description=(
         "Install SEVERAL Marketplace apps in ONE call. Use whenever the user "
@@ -134,6 +135,7 @@ async def fn_bulk_install_apps(ctx, params: BulkAppIdsParams) -> ActionResult:
     "bulk_uninstall_apps",
     action_type="destructive",
     effects=["delete:install"],
+    event="marketplace.apps_bulk_uninstalled",
     data_model=BulkResult,
     description=(
         "Uninstall SEVERAL apps in ONE call — the batch version of "
@@ -213,6 +215,7 @@ async def fn_get_app_reviews(ctx, params: AppReviewsParams) -> ActionResult:
     action_type="write",
     effects=["create:review"],
     id_projection="app_id",
+    event="marketplace.review_created",
     data_model=ReviewsResult,
     description=(
         "Leave (or update) YOUR review of an app — star rating 1-5 plus the "

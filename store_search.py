@@ -52,18 +52,18 @@ from typing import Any, Iterable, Sequence
 # that lowercases in some branches and not others fails in ways that look
 # random from the outside.
 
-_PUNCT_RE = re.compile(r"[_\-.,/\\|:;()\[\]{}'\"`!?*+@#$%^&~<>]")
-_SPACE_RE = re.compile(r"\s+")
+_PUNCT_TABLE = str.maketrans({c: " " for c in "_-.,/\\|:;()[]{}\'\"`!?*+@#$%^&~<>"})
 
 
 def normalize(s: str) -> str:
     """Fold accents, lowercase, and turn punctuation into spaces."""
     if not s:
         return ""
+    if s.isascii():
+        return " ".join(s.lower().translate(_PUNCT_TABLE).split())
     decomposed = unicodedata.normalize("NFKD", s)
     stripped = "".join(c for c in decomposed if not unicodedata.combining(c))
-    spaced = _PUNCT_RE.sub(" ", stripped.lower())
-    return _SPACE_RE.sub(" ", spaced).strip()
+    return " ".join(stripped.lower().translate(_PUNCT_TABLE).split())
 
 
 # ── phrases ───────────────────────────────────────────────────────────────
@@ -337,12 +337,12 @@ def _score_token(token: str, field_words: Sequence[str], field_text: str,
     # only in name-like fields (see FUZZY_FIELDS).
     budget = typo_budget(len(token)) if allow_fuzzy else 0
     if budget > 0:
+        tok_len = len(token)
         for w in field_words:
-            if abs(len(w) - len(token)) > budget:
+            if abs(len(w) - tok_len) > budget:
                 continue
             if edit_distance(token, w, budget) <= budget:
-                best = max(best, MATCH_FUZZY)
-                break
+                return MATCH_FUZZY
 
     return best
 
