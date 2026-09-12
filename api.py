@@ -223,12 +223,16 @@ async def get_marketplace_categories(ctx) -> list[str]:
     if resp.status_code != 200:
         return []
     data = resp.json()
-    if isinstance(data, list):
-        return [str(c) for c in data if c]
-    if isinstance(data, dict):
-        cats = data.get("categories", [])
-        return [str(c) for c in cats if c]
-    return []
+    cats_raw = data.get("categories", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+    out: list[str] = []
+    for c in cats_raw:
+        if isinstance(c, dict):
+            slug = c.get("category") or c.get("slug") or c.get("name") or ""
+            if slug:
+                out.append(str(slug))
+        elif c:
+            out.append(str(c))
+    return out
 
 
 async def get_featured_apps(ctx, limit: int = 10) -> list[dict]:

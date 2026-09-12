@@ -95,6 +95,6 @@ async def skeleton_refresh_marketplace(ctx) -> dict:
             "system_apps": system_installed,
             "featured_count": len(trimmed_featured),
             "featured": trimmed_featured,
-            "categories": categories[:20],
+            "categories": categories,
         }
     }
