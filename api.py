@@ -215,6 +215,34 @@ async def get_installed_apps_for_user(ctx) -> list[dict]:
 
 
 async def get_marketplace_categories(ctx) -> list[str]:
+    """Return all available marketplace categories for filtering and discovery.
+
+    Pulls from the canonical category catalog (/catalog) so Webbee is grounded
+    in the complete system directory (121 categories), falling back to the
+    populated-only listing (/categories) if needed.
+    """
+    # 1. Try canonical full catalog first
+    try:
+        resp = await ctx.http.get(
+            f"{_AUTH_GW}/v1/marketplace/categories/catalog",
+            headers=_user_jwt_headers(ctx),
+            timeout=5.0,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            if isinstance(data, dict) and "groups" in data:
+                out: list[str] = []
+                for g in data.get("groups", []):
+                    for c in g.get("categories", []):
+                        cid = c.get("id") or c.get("category") or c.get("slug")
+                        if cid and str(cid) not in out:
+                            out.append(str(cid))
+                if out:
+                    return out
+    except Exception as exc:
+        log.warning("get_marketplace_categories /catalog fetch failed: %s", exc)
+
+    # 2. Fallback to populated categories
     resp = await ctx.http.get(
         f"{_AUTH_GW}/v1/marketplace/categories",
         headers=_user_jwt_headers(ctx),
@@ -228,9 +256,9 @@ async def get_marketplace_categories(ctx) -> list[str]:
     for c in cats_raw:
         if isinstance(c, dict):
             slug = c.get("category") or c.get("slug") or c.get("name") or ""
-            if slug:
+            if slug and str(slug) not in out:
                 out.append(str(slug))
-        elif c:
+        elif c and str(c) not in out:
             out.append(str(c))
     return out
 
